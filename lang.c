@@ -1,4 +1,3 @@
-#include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,24 +5,46 @@
 
 const char *HELP_MESSAGE = "Usage: lang <file.lang>";
 
-enum TokenType {
-  OUTPUT,
-  OUTPUT_UTF8,
+const int MAX_COMMAND_LENGTH = 10;
+
+enum Command {
+  OUT,
+  OUT_CHAR,
   GOTO,
   COPY,
   SET,
   ADD,
   SUB,
   MUL,
-  DOLLAR,
+  INVALID,
+};
+
+const char *commands[8] = {"out", "out_char", "goto", "copy",
+                           "set", "add",      "sub",  "mul"};
+
+enum ArgumentLiteral {
   INTEGER,
-  HASH,
+  CELL_REFERENCE,
+  DOT,
+  THREE_DOTS,
+  CLIPBOARD,
 };
 
 typedef struct {
-  char *Value;
-  enum TokenType Kind;
-} Token;
+  enum ArgumentLiteral Literal;
+  void *value;
+} Argument;
+
+typedef struct {
+  enum Command cmd;
+  Argument args[3];
+  uint8_t arg_count;
+} Instruction;
+
+/* typedef struct { */
+/*   char *Value; */
+/*   enum TokenType Kind; */
+/* } Token; */
 
 typedef struct {
   uint8_t *buffer;
@@ -66,6 +87,24 @@ void read_char(Lexer *l) {
   l->current_char = l->buffer[l->current_position];
 }
 
+int8_t is_alpha(uint8_t c) {
+  return (('a' <= c && c <= 'z') || (('A' <= c && c <= 'Z') || (c == '_')));
+}
+
+uint8_t peek_char(Lexer *l) { return l->buffer[l->read_position]; }
+
+uint8_t *read_command_literal(Lexer *l) {
+  uint8_t *cmd = (uint8_t *)malloc(MAX_COMMAND_LENGTH);
+  int8_t index = 0;
+  for (; is_alpha(l->current_char);) {
+    cmd[index] = l->current_char;
+    index++;
+    read_char(l);
+  }
+  cmd[index] = '\0';
+  return cmd;
+}
+
 void skip_white_space(Lexer *l) {
   for (; l->current_char == ' ' || l->current_char == '\t' ||
          l->current_char == '\n' || l->current_char == '\r';) {
@@ -77,6 +116,16 @@ void skip_comment_line(Lexer *l) {
   for (; l->current_char != '\n';) {
     read_char(l);
   }
+}
+
+enum Command parse_command(uint8_t *cmd_literal) {
+  enum Command cmd = INVALID;
+  for (int i = 0; i < 8; i++) {
+    if (strcmp((char *)cmd_literal, commands[i]) == 0) {
+      cmd = i;
+    }
+  }
+  return cmd;
 }
 
 uint8_t *read_symbol(Lexer *l) { return NULL; }
@@ -108,16 +157,50 @@ int main(int argc, char *argv[]) {
   Lexer *l = new_lexer(buffer, file_size);
   while (l->current_char != '\0') {
     skip_white_space(l);
-    switch (l->current_char) {
-    case '#':
+    if (l->current_char == '#') {
       skip_comment_line(l);
       continue;
-    case ';':
-    default:
-      if (isalpha(l->current_char)) {
-      }
     }
-    read_char(l);
+    if (is_alpha(l->current_char)) {
+      uint8_t *cmd_literal = read_command_literal(l);
+      enum Command cmd = parse_command(cmd_literal);
+      printf("%d here\n", cmd);
+      switch (cmd) {
+      case OUT:
+        printf("out case");
+        break;
+      case OUT_CHAR:
+        printf("out case");
+        break;
+      case GOTO:
+        printf("out case");
+        break;
+      case COPY:
+        printf("out case");
+        break;
+      case SET:
+        printf("out case");
+        break;
+      case ADD:
+        printf("out case");
+        break;
+      case SUB:
+        printf("out case");
+        break;
+      case MUL:
+        printf("out case");
+        break;
+      case INVALID:
+        printf("%s is not a valid command!", cmd_literal);
+        break;
+      default:
+        printf("Something went really really wrong");
+        break;
+      }
+      printf("got here??");
+      read_char(l);
+      continue;
+    }
   }
   free(buffer);
   free(l);

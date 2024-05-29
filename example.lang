@@ -1,4 +1,5 @@
 # set 72
+set ...
 set $1 101
 set $2 108
 set $3 108
@@ -10,5 +11,4 @@ set $8 114
 set $9 108
 set $10 100
 set $11 33
-goto 0
-output_utf8 ...
+goto $0
