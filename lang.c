@@ -1,12 +1,15 @@
 #include <ctype.h>
-#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 const char *HELP_MESSAGE = "Usage: lang file.lang\n";
 const int MAX_TOKENS_IN_INSTRUCTION = 4;
-const int MAX_TOKEN_LENGTH = 10; //length of CLIPBOARD_REFERENCE '$CLIPBOARD'
+const int MAX_TOKEN_LENGTH = 10;
+const int MAX_CELL_REFERENCE_LENGTH = 5;
+const int MIN_CELL_REFERENCE_LENGTH = 2;
 
 typedef enum {
   OUT,
@@ -15,6 +18,7 @@ typedef enum {
   COPY,
   SET,
   ADD,
+  SUB,
   MUL,
   DIV,
   CELL_REFERENCE,
@@ -27,12 +31,131 @@ typedef enum {
 
 typedef struct {
   TokenKind token_kind;
-  char *token_literal;
+  void *token_literal;
+  /* char *token_parsing_error; // only INVALID tokens will have this */
 } Token;
 
 typedef struct {
   Token *tokens;
 } Instruction;
+
+void free_instruction(Instruction *instruction) {
+  if (instruction != NULL) {
+  }
+}
+
+Token *token_from_literal(char *literal) {
+  Token *token = malloc(sizeof(Token));
+  token->token_literal = literal;
+  switch (literal[0]) {
+  case 'O':
+    if (strcmp(literal, "OUT")) {
+      token->token_kind = OUT;
+      return token;
+    }
+    if (strcmp(literal, "OUT_CHAR")) {
+      token->token_kind = OUT_CHAR;
+      return token;
+    }
+  case 'G':
+    if (strcmp(literal, "GOTO")) {
+      token->token_kind = GOTO;
+      return token;
+    }
+  case 'C':
+    if (strcmp(literal, "COPY")) {
+      token->token_kind = GOTO;
+      return token;
+    }
+  case 'S':
+    if (strcmp(literal, "SET")) {
+      token->token_kind = SET;
+      return token;
+    }
+    if (strcmp(literal, "SUB")) {
+      token->token_kind = SUB;
+      return token;
+    }
+  case 'A':
+    if (strcmp(literal, "ADD")) {
+      token->token_kind = ADD;
+      return token;
+    }
+  case 'M':
+    if (strcmp(literal, "MUL")) {
+      token->token_kind = MUL;
+      return token;
+    }
+  case 'D':
+    if (strcmp(literal, "DIV")) {
+      token->token_kind = DIV;
+      return token;
+    }
+  case '$':
+    if (strlen(literal) < MIN_CELL_REFERENCE_LENGTH) {
+      token->token_kind = INVALID;
+      return token;
+    }
+    if (isdigit(literal[1])) {
+      int len = strlen(literal);
+      if (len <= MAX_CELL_REFERENCE_LENGTH) {
+        int *value = malloc(sizeof(int));
+        int result = sscanf(literal + 1, "%d", value);
+        if (result == 1) {
+          token->token_literal = value;
+          token->token_kind = CELL_REFERENCE;
+        } else {
+          token->token_kind = INVALID;
+          free(value);
+          return token;
+        }
+      }
+    }
+    if (literal[1] == 'C') {
+      if (strcmp(literal, "$CLIPBOARD")) {
+        token->token_kind = CLIPBOARD_REFERENCE;
+        return token;
+      }
+    }
+  case '.':
+    if (strcmp(literal, ".")) {
+      token->token_kind = DOT;
+      return token;
+    }
+    if (strcmp(literal, "...")) {
+      token->token_kind = THREE_DOTS;
+      return token;
+    }
+  case '-':
+    if (strlen(literal) < MIN_CELL_REFERENCE_LENGTH) {
+      token->token_kind = INVALID;
+      return token;
+    }
+    int *value = malloc(sizeof(int));
+    int result = sscanf(literal, "%d", value);
+    if (result == 1) {
+      token->token_kind = INTEGER;
+      token->token_literal = value;
+    } else {
+      token->token_kind = INVALID;
+      token->token_literal = value;
+    }
+    return token;
+  default:
+    if (isdigit(literal[0])) {
+      // parse positive integer literal
+    }
+  }
+  token->token_kind = INVALID;
+  return token;
+}
+
+void free_token(Token *token) {
+  if (token != NULL) {
+    free(token->token_literal);
+    free(token);
+  }
+}
 
 const char *display_token_literal(TokenKind token_kind) {
   switch (token_kind) {
@@ -48,6 +171,8 @@ const char *display_token_literal(TokenKind token_kind) {
     return "set";
   case ADD:
     return "add";
+  case SUB:
+    return "sub";
   case MUL:
     return "mul";
   case DIV:
@@ -123,9 +248,11 @@ Instruction *new_instruction() {
 void evaluate_instruction(Instruction *instruction) {}
 
 Token *read_token(Lexer *lexer) {
-  char *identifier = malloc(MAX_TOKEN_LENGTH);
+  char *token_literal = malloc(MAX_TOKEN_LENGTH);
+  if (lexer->current_character == '-') {
+    // read signed integer
+  }
   if (isdigit(lexer->current_character)) {
-    // read integer
   }
   if (isalpha(lexer->current_character)) {
     // read keyword
@@ -133,6 +260,7 @@ Token *read_token(Lexer *lexer) {
   if (lexer->current_character == '$') {
     // read cell reference
   }
+  return NULL;
 }
 
 int main(int argc, char **argv) {
@@ -141,44 +269,17 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
   }
   char *file_name = argv[1];
+  char *line = NULL;
+  size_t line_size = 0;
+  ssize_t read = 0;
   FILE *file = NULL;
-  char *buffer = NULL;
-  int file_size = 0;
   file = fopen(file_name, "rb");
   if (file == NULL) {
     perror("Error while opening file");
     return EXIT_FAILURE;
   }
-  fseek(file, 0, SEEK_END);
-  file_size = ftell(file);
-  rewind(file);
-  buffer = (char *)malloc(file_size + 1);
-  if (buffer == NULL) {
-    fclose(file);
-    perror("Error while allocating memory for buffer:");
-    return EXIT_FAILURE;
+  while ((read = (getline(&line, &line_size, file)) != -1)) {
+    printf("%s", line);
   }
-  size_t read = fread(buffer, 1, file_size, file);
-  if (read != file_size) {
-    perror("Error while reading file");
-    free(buffer);
-    fclose(file);
-    return EXIT_FAILURE;
-  }
-  fclose(file);
-  buffer[file_size] = '\0';
-  Lexer *lexer = new_lexer(buffer, file_size);
-  while (peek_char(lexer) != EOF) {
-    skip_whitespace(lexer);
-    if (lexer->current_character == '#') {
-      skip_line(lexer);
-    }
-    if (lexer->current_character == '\n') {
-    }
-    Token *token = read_token(lexer);
-    display_token_literal(token->token_kind);
-  }
-  free(buffer);
-  free(lexer);
   return EXIT_SUCCESS;
 }
