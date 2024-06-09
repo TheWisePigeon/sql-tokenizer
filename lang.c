@@ -247,22 +247,6 @@ Instruction *new_instruction() {
 
 void evaluate_instruction(Instruction *instruction) {}
 
-Token *read_token(Lexer *lexer) {
-  char *token_literal = malloc(MAX_TOKEN_LENGTH);
-  if (lexer->current_character == '-') {
-    // read signed integer
-  }
-  if (isdigit(lexer->current_character)) {
-  }
-  if (isalpha(lexer->current_character)) {
-    // read keyword
-  }
-  if (lexer->current_character == '$') {
-    // read cell reference
-  }
-  return NULL;
-}
-
 int main(int argc, char **argv) {
   if (argc != 2) {
     printf("%s", HELP_MESSAGE);
@@ -279,7 +263,13 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
   while ((read = (getline(&line, &line_size, file)) != -1)) {
-    printf("%s", line);
+    char *token_literal = strtok(line, " ");
+    if (token_literal != NULL) {
+      printf("%s", token_literal);
+      while ((token_literal = strtok(NULL, " ")) != NULL) {
+        printf("%s", token_literal);
+      }
+    }
   }
   return EXIT_SUCCESS;
 }
