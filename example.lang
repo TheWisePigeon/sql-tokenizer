@@ -1,14 +1,14 @@
-# set 72
-set ...
-set $1 101
-set $2 108
-set $3 108
-set $4 111
-set $5 32
-set $6 119
-set $7 111
-set $8 114
-set $9 108
-set $10 100
-set $11 33
-goto $0
+# SET 72
+SET ...
+SET $1 101
+SET $2 108
+SET $3 108
+SET $4 111
+SET $5 32
+SET $6 119
+SET $7 111
+SET $8 114
+SET $9 108
+SET $10 100
+SET $11 33
+GOTO $0

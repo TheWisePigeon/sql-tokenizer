@@ -1,2 +1,2 @@
 build:
-	gcc -Wall -pedantic lang.c -o lang
+	gcc -g -Wall -pedantic lang.c -o lang
