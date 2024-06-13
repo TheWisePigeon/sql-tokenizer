@@ -123,22 +123,6 @@ Token *token_from_literal(char *literal) {
       return token;
     }
     if (isdigit(literal[1])) {
-      int len = strlen(literal);
-      if (len <= MAX_CELL_REFERENCE_LENGTH) {
-        char *endptr;
-        strtod(literal + 1, &endptr);
-        if (*endptr == '\0') {
-          // valid cell reference
-          char *value = malloc(len);
-          for (int i = 0; i < len; i++) {
-            value[i] = literal[i + 1];
-          }
-          token->token_literal = value;
-        } else {
-          token->token_kind = INVALID;
-          return token;
-        }
-      }
     }
     if (literal[1] == 'c') {
       if (strcmp(literal, "$clipboard") == 0) {
@@ -303,7 +287,6 @@ int main(int argc, char **argv) {
       }
       token_literal = strtok(NULL, " ");
     }
-    printf("Evaluate instruction\n");
   }
   free(line);
   return EXIT_SUCCESS;
